@@ -75,7 +75,10 @@ runs:
           const marker = '<!-- codiff-action -->';
 
           const prBody = context.payload.pull_request.body || '';
-          if (prBody.includes('<!-- codiff-mermaid -->')) return;
+          const prBodyStripped = prBody
+            .replace(/```[\s\S]*?```/g, '')
+            .replace(/`[^`]*`/g, '');
+          if (prBodyStripped.includes('<!-- codiff-mermaid -->')) return;
 
           const { data: comments } = await github.rest.issues.listComments({
             owner: context.repo.owner,
