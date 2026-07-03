@@ -1,4 +1,4 @@
-name: 'codiff'
+name: 'codiff action'
 description: 'Post a structural call-graph diff as a comment on every pull request'
 author: 'issahammoud'
 
