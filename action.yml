@@ -124,7 +124,7 @@ runs:
               if (s.modified_functions) parts.push(`${s.modified_functions} modified`);
               if (s.removed_functions)  parts.push(`${s.removed_functions} removed`);
               const n = s.modules_touched.length;
-              summary = parts.join(' · ') + ` across ${n} file${n !== 1 ? 's' : ''}\n\n`;
+              summary = parts.join(' · ') + ` functions across ${n} file${n !== 1 ? 's' : ''}\n\n`;
             } catch (_) {}
 
             body = `${title}\n\n${summary}${diagram}\n${marker}`;
