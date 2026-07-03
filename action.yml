@@ -45,27 +45,28 @@ runs:
     - name: Generate structural diff
       id: diff
       run: |
+        STDERR_FILE="$RUNNER_TEMP/codiff_stderr.txt"
+
         run_codiff() {
           codiff diff \
             --repo . \
             --base ${{ github.event.pull_request.base.sha }} \
             --head ${{ github.event.pull_request.head.sha }} \
-            --format mermaid 2>&1
+            --format "$1" 2>"$STDERR_FILE"
         }
 
-        if OUTPUT=$(run_codiff); then
-          :
-        else
-          echo "::warning::codiff failed, retrying with a clean index: $OUTPUT"
+        if ! run_codiff mermaid > "$RUNNER_TEMP/codiff_diagram.txt"; then
+          echo "::warning::codiff failed, retrying with a clean index: $(cat $STDERR_FILE)"
           rm -f .codiff.db
-          OUTPUT=$(run_codiff) || true
+          run_codiff mermaid > "$RUNNER_TEMP/codiff_diagram.txt" || true
         fi
 
+        OUTPUT=$(cat "$RUNNER_TEMP/codiff_diagram.txt")
         if [ -z "$(echo "$OUTPUT" | tr -d '[:space:]')" ]; then
           echo "empty=true" >> "$GITHUB_OUTPUT"
         else
           echo "empty=false" >> "$GITHUB_OUTPUT"
-          echo "$OUTPUT" > "$RUNNER_TEMP/codiff_diagram.txt"
+          run_codiff json > "$RUNNER_TEMP/codiff_stats.json" || true
         fi
       shell: bash
 
@@ -105,14 +106,28 @@ runs:
             return;
           }
 
-          const title = '### Structural diff · [codiff](https://github.com/issahammoud/codiff)';
+          const title = '### Structural diff (generated with [codiff](https://github.com/issahammoud/codiff))';
           let body;
           if (empty) {
             body = `${title}\n\nNo structural changes detected.\n${marker}`;
           } else {
             const diagramPath = path.join(process.env.RUNNER_TEMP, 'codiff_diagram.txt');
             const diagram = fs.readFileSync(diagramPath, 'utf8').trim();
-            body = `${title}\n\n${diagram}\n${marker}`;
+
+            let summary = '';
+            try {
+              const statsPath = path.join(process.env.RUNNER_TEMP, 'codiff_stats.json');
+              const stats = JSON.parse(fs.readFileSync(statsPath, 'utf8'));
+              const s = stats.summary;
+              const parts = [];
+              if (s.added_functions)   parts.push(`${s.added_functions} added`);
+              if (s.modified_functions) parts.push(`${s.modified_functions} modified`);
+              if (s.removed_functions)  parts.push(`${s.removed_functions} removed`);
+              const n = s.modules_touched.length;
+              summary = parts.join(' · ') + ` across ${n} file${n !== 1 ? 's' : ''}\n\n`;
+            } catch (_) {}
+
+            body = `${title}\n\n${summary}${diagram}\n${marker}`;
           }
 
           if (existing) {
