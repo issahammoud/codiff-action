@@ -38,17 +38,20 @@ runs:
     - name: Generate structural diff
       id: diff
       run: |
-        OUTPUT=$(codiff diff \
+        if OUTPUT=$(codiff diff \
           --repo . \
           --base ${{ github.event.pull_request.base.sha }} \
           --head ${{ github.event.pull_request.head.sha }} \
-          --format mermaid 2>/dev/null || true)
-
-        if [ -z "$(echo "$OUTPUT" | tr -d '[:space:]')" ]; then
-          echo "empty=true" >> "$GITHUB_OUTPUT"
+          --format mermaid 2>&1); then
+          if [ -z "$(echo "$OUTPUT" | tr -d '[:space:]')" ]; then
+            echo "empty=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "empty=false" >> "$GITHUB_OUTPUT"
+            echo "$OUTPUT" > "$RUNNER_TEMP/codiff_diagram.txt"
+          fi
         else
-          echo "empty=false" >> "$GITHUB_OUTPUT"
-          echo "$OUTPUT" > "$RUNNER_TEMP/codiff_diagram.txt"
+          echo "empty=true" >> "$GITHUB_OUTPUT"
+          echo "::warning::codiff failed: $OUTPUT"
         fi
       shell: bash
 
