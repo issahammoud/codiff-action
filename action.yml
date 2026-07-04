@@ -66,7 +66,6 @@ runs:
           echo "empty=true" >> "$GITHUB_OUTPUT"
         else
           echo "empty=false" >> "$GITHUB_OUTPUT"
-          run_codiff json > "$RUNNER_TEMP/codiff_stats.json" || true
         fi
       shell: bash
 
@@ -114,20 +113,7 @@ runs:
             const diagramPath = path.join(process.env.RUNNER_TEMP, 'codiff_diagram.txt');
             const diagram = fs.readFileSync(diagramPath, 'utf8').trim();
 
-            let summary = '';
-            try {
-              const statsPath = path.join(process.env.RUNNER_TEMP, 'codiff_stats.json');
-              const stats = JSON.parse(fs.readFileSync(statsPath, 'utf8'));
-              const s = stats.summary;
-              const parts = [];
-              if (s.added_functions)   parts.push(`${s.added_functions} added`);
-              if (s.modified_functions) parts.push(`${s.modified_functions} modified`);
-              if (s.removed_functions)  parts.push(`${s.removed_functions} removed`);
-              const n = s.modules_touched.length;
-              summary = parts.join(' · ') + ` functions across ${n} file${n !== 1 ? 's' : ''}\n\n`;
-            } catch (_) {}
-
-            body = `${title}\n\n${summary}${diagram}\n${marker}`;
+            body = `${title}\n\n${diagram}\n${marker}`;
           }
 
           if (existing) {
